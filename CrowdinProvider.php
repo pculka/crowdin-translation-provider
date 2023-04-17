@@ -112,8 +112,20 @@ final class CrowdinProvider implements ProviderInterface
         $localeLanguageIdMap = [];
         foreach ($this->listLanguages($locales) as $language) {
             if (in_array($language['data']['locale'], $locales)) {
-                $localeLanguageIdMap[$language['data']['locale']] = $language['data']['id'];
+                $localeLanguageMap[$language['data']['locale']] = $language['data']['id'];
+            } else if (in_array($language['data']['id'], $locales)) {
+                // try fallback to language id
+                $localeLanguageMap[$language['data']['id']] = $language['data']['id'];
             }
+        }
+
+        if (count($localeLanguageMap) !== count($locales)) {
+            $message = sprintf("Unable to find all requested locales in Crowdin: Locale(s) \"%s\" not found.\n
+                        Check your translation.yaml for erroneous locale entries and follow i18n specification",
+                implode(', ', array_diff($locales, array_keys($localeLanguageMap)))
+            );
+            $this->logger->error($message);
+            throw new \Exception($message);
         }
 
         foreach ($domains as $domain) {
